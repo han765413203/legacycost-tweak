@@ -11,17 +11,21 @@
 | IPA 解包 / 逆向 / 密钥 / 键名 | ✅ 完成 |
 | Theos 工程 + 全部 RVA + 注入器 | ✅ 完成 |
 | Mach-O 注入 + 重打包流水线 | ✅ 完成，已实测 |
-| dylib 编译 | ❌ **卡住** |
+| dylib 编译 | ✅ 完成（GitHub Actions） |
+| 打包 IPA | ✅ 完成 |
 
-**为什么卡住：** 编译 dylib 需要 clang + iOS SDK（Theos 工具链）。当前这台 Windows
-机器上没有 clang，WSL 被安全策略封禁，GitHub release 下载被网络策略拦截。
-所以 `Tweak.xm` 写好了但还没编译成 `.dylib`。
+**踩过的坑：**
+
+1. `hitTest:withEvent:` 写在了 `UIViewController` 上（那是 `UIView` 的方法）→ 改用 `LCPassthroughView`
+2. `--strip-sig` 把 `LC_CODE_SIGNATURE` 清零后，TrollStore 的 ldid 算不出签名位置，
+   报「安装错误 (175) 应用签名失败」→ **默认改为保留原签名槽位**
+3. fat dylib（arm64 + arm64e）签名容易出岔子 → 抽成单 arm64 切片，跟主二进制架构对齐
 
 **已交付：**
 
-- `dist/负之遗产_加速版_可装.ipa` —— 把 IPA 里原本就带着但没启用的
-  `游戏加速LuckySpeede_0.0.9.dylib` 接上了加载命令。**这个能直接装**，
-  进游戏有加速悬浮球。只是加速，不是材料修改。**装之前先备份原 IPA。**
+- `dist/负之遗产_mod.ipa` —— **材料修改版，已编译完成，可直接装**
+- `dist/LegacyCostTweak.dylib` —— 单独抽出来的 dylib（arm64 单切片，已签名），
+  配合 TrollFools 往已装好的 app 里注入也行
 - `tools/pack_ipa.py` —— 拿到编译好的 dylib 后，一条命令出最终 IPA
 - `tools/build_dylib.sh` —— Linux/macOS 一键编译 + 打包
 - `.github/workflows/build.yml` —— 推到 GitHub 自动编译

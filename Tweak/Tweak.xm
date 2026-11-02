@@ -163,16 +163,16 @@ static void DefaultConfig(void) {
         @"enabled"      : @YES,
         // 材料：草 / 木 / 布 / 铁 / 石 / 魂 / 宝珠 / 材料
         @"matOn"        : @YES,
-        @"matValue"     : @999999999,
+        @"matValue"     : @999999,
         // 金币
         @"goldOn"       : @YES,
-        @"goldValue"    : @999999999,
+        @"goldValue"    : @9999999,
         // 经验
         @"expOn"        : @YES,
-        @"expValue"     : @999999999,
+        @"expValue"     : @9999999,
         // 遗产宝石
         @"legacyOn"     : @YES,
-        @"legacyValue"  : @999999999,
+        @"legacyValue"  : @999999,
         @"killCheater"  : @YES,
         @"logKeys"      : @YES,
         @"alsoAccum"    : @NO,
@@ -184,7 +184,12 @@ static void DefaultConfig(void) {
 static void LoadConfig(void) {
     NSDictionary *d = [NSDictionary dictionaryWithContentsOfFile:kCfgPath];
     DefaultConfig();
-    if (d) [gCfg addEntriesFromDictionary:d];
+    if (d) {
+        [gCfg addEntriesFromDictionary:d];
+    } else {
+        // 首次运行把默认配置落盘，方便你在 Filza 里直接改 enabled=false 关掉
+        [gCfg writeToFile:kCfgPath atomically:YES];
+    }
 }
 
 static void SaveConfig(void) {
@@ -419,13 +424,10 @@ static void Hook_SetInt(void *key, int32_t v, void *m) {
     if ([gCfg[@"logKeys"] boolValue] && k.length)
         FileLog(@"[SetInt]    %@ <- %d  <%s>\n", k, v, [CatName(c) UTF8String]);
 
+    // 只处理 cheater 标记；其余写入一律放行，别往存档里灌脏值
     if (c == KeyCatCheater && [gCfg[@"killCheater"] boolValue]) {
         if (orig_SetInt) orig_SetInt(key, 0, m);
         return;
-    }
-    if (c != KeyCatNone && CatEnabled(c)) {
-        long long t = TargetValue(c);
-        if (t != 0) v = (int32_t)t;
     }
     if (orig_SetInt) orig_SetInt(key, v, m);
 }
@@ -435,12 +437,9 @@ static void Hook_SetFloat(void *key, float v, void *m) {
     KeyCat c = ClassifyKey(k);
 
     if ([gCfg[@"logKeys"] boolValue] && k.length)
-        FileLog(@"[SetFloat]  %@ <- %f\n", k, v);
+        FileLog(@"[SetFloat]  %@ <- %f  <%s>\n", k, v, [CatName(c) UTF8String]);
 
-    if (c != KeyCatNone && CatEnabled(c)) {
-        long long t = TargetValue(c);
-        if (t != 0) v = (float)t;
-    }
+    // 写入放行，不做覆盖
     if (orig_SetFloat) orig_SetFloat(key, v, m);
 }
 

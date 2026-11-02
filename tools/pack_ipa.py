@@ -30,7 +30,9 @@ DYLIB_NAME = "LegacyCostTweak.dylib"
 DYLIB_LOAD_PATH = "@executable_path/Frameworks/" + DYLIB_NAME
 
 
-def add_load_command(binary_path, dylib_path, strip_sig=True):
+def add_load_command(binary_path, dylib_path, strip_sig=False):
+    """strip_sig 默认 False —— 保留原 LC_CODE_SIGNATURE，
+    不然 TrollStore 的 ldid 找不到旧签名位置，会报「ldid 返回非零状态码」"""
     data = bytearray(open(binary_path, 'rb').read())
     magic, cputype, cpusub, ft, ncmds, szcmds, flags, _ = struct.unpack_from('<IiiIIIII', data, 0)
     if magic != 0xFEEDFACF:
@@ -90,6 +92,12 @@ def add_load_command(binary_path, dylib_path, strip_sig=True):
         for o, c, cs in cmds:
             if c == 0x1D:  # LC_CODE_SIGNATURE
                 struct.pack_into('<II', data, o + 8, 0, 0)
+        print("  [警告] 已清空签名，TrollStore 可能签不动")
+    else:
+        for o, c, cs in cmds:
+            if c == 0x1D:
+                do, ds = struct.unpack_from('<II', data, o + 8)
+                print(f"  [OK] 保留原签名槽位 (dataoff=0x{do:x} size=0x{ds:x})，交给 ldid 重签")
 
     open(binary_path, 'wb').write(data)
     print(f"  [OK] 已注入 {dylib_path}  (ncmds {ncmds}->{ncmds+1})")
@@ -102,6 +110,7 @@ def main():
 
     dylib = sys.argv[1]
     out_ipa = sys.argv[2] if len(sys.argv) > 2 else "负之遗产_mod.ipa"
+    strip_sig = '--strip-sig' in sys.argv
 
     if not os.path.isfile(dylib):
         raise SystemExit(f"找不到 dylib: {dylib}")
@@ -130,7 +139,7 @@ def main():
         print(f"  -> {dst}  ({os.path.getsize(dst)} bytes)")
 
         print("[3/4] 注入加载命令 ...")
-        add_load_command(os.path.join(app, BUNDLE_ID), DYLIB_LOAD_PATH)
+        add_load_command(os.path.join(app, BUNDLE_ID), DYLIB_LOAD_PATH, strip_sig=strip_sig)
 
         print("[4/4] 重新打包 ...")
         out_path = os.path.abspath(out_ipa)
