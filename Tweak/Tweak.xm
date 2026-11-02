@@ -624,11 +624,27 @@ static void InstallHooks(void) {
 @end
 
 // ---- 悬浮按钮 ----
+// 穿透视图：空白处不吃事件，只有按钮才拦，不然整屏点不动
+@interface LCPassthroughView : UIView
+@end
+
+@implementation LCPassthroughView
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    UIView *v = [super hitTest:point withEvent:event];
+    return (v == self) ? nil : v;
+}
+@end
+
 @interface LCOverlayVC : UIViewController
 @property (nonatomic, strong) UIButton *btn;
 @end
 
 @implementation LCOverlayVC
+
+- (void)loadView {
+    self.view = [[LCPassthroughView alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    self.view.backgroundColor = [UIColor clearColor];
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -655,13 +671,6 @@ static void InstallHooks(void) {
     [self.btn addGestureRecognizer:pan];
 
     [self.view addSubview:self.btn];
-}
-
-// 只有按到按钮才吃事件，别的地方穿透，不然整屏点不动
-- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
-    UIView *v = [super hitTest:point withEvent:event];
-    if (v == self.view) return nil;
-    return v;
 }
 
 - (void)onTap {
