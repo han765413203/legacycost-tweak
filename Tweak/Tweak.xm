@@ -241,12 +241,12 @@ static void ApplyOnce(void) {
         if (kMats[i].isLong) {
             int64_t cur = 0;
             if (!ProbeObscuredLong(a, &cur)) continue;
-            int64_t target = [kMats[i].cfgKey isEqualToString:@"legacyValue"] ? legVal : (int64_t)matVal;
+            int64_t target = (strcmp(kMats[i].cfgKey, "legacyValue") == 0) ? legVal : (int64_t)matVal;
             if (cur != target) { WriteObscuredLong(a, target); wrote++; }
         } else {
             int32_t cur = 0;
             if (!ProbeObscuredInt(a, &cur)) continue;
-            int32_t target = [kMats[i].cfgKey isEqualToString:@"orbValue"] ? orbVal : matVal;
+            int32_t target = (strcmp(kMats[i].cfgKey, "orbValue") == 0) ? orbVal : matVal;
             if (cur != target) { WriteObscuredInt(a, target); wrote++; }
         }
     }
