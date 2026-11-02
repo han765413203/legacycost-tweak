@@ -1,0 +1,19 @@
+# 全部按 LF 存，别让 Windows 的 CRLF 把 Makefile / .sh 搞崩
+* text=auto eol=lf
+
+*.sh       text eol=lf
+*.py       text eol=lf
+*.xm       text eol=lf
+*.h        text eol=lf
+*.c        text eol=lf
+*.m        text eol=lf
+Makefile   text eol=lf
+control    text eol=lf
+*.plist    text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.md       text eol=lf
+
+*.ipa      binary
+*.dylib    binary
+*.png      binary

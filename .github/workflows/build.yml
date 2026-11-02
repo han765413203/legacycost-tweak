@@ -1,0 +1,64 @@
+name: build-tweak
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: 拉代码
+        uses: actions/checkout@v4
+
+      - name: 装依赖
+        run: |
+          brew install ldid xz make || true
+
+      - name: 装 Theos
+        run: |
+          git clone --recursive --depth 1 https://github.com/theos/theos.git "$HOME/theos"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+          ls "$HOME/theos"
+
+      - name: 装 iOS SDK（只取 15.x）
+        run: |
+          mkdir -p "$HOME/theos/sdks"
+          cd "$HOME/theos/sdks"
+          git init -q
+          git remote add origin https://github.com/theos/sdks.git
+          git config core.sparseCheckout true
+          echo "iPhoneOS15*.sdk/*" > .git/info/sparse-checkout
+          git pull --depth 1 origin master || git pull --depth 1 origin main
+          echo "--- 拿到的 SDK ---"
+          ls -d iPhoneOS*.sdk 2>/dev/null || echo "!! 一个都没有"
+
+      - name: 编译
+        run: |
+          cd Tweak
+          make clean || true
+          make FINALPACKAGE=1 DEBUG=0
+
+      - name: 收集产物
+        run: |
+          mkdir -p out
+          D=$(find Tweak/.theos -name 'LegacyCostTweak.dylib' -type f | head -1)
+          if [ -z "$D" ]; then
+            echo "!! 没编出 dylib，下面是所有产物："
+            find Tweak/.theos -type f \( -name '*.dylib' -o -name '*.o' \) | head -30
+            exit 1
+          fi
+          cp "$D" out/LegacyCostTweak.dylib
+          echo "--- 产物 ---"
+          ls -la out/
+          file out/LegacyCostTweak.dylib
+
+      - name: 上传
+        uses: actions/upload-artifact@v4
+        with:
+          name: LegacyCostTweak-dylib
+          path: out/LegacyCostTweak.dylib
+          if-no-files-found: error
+          retention-days: 30

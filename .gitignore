@@ -1,0 +1,21 @@
+# 大文件不进仓库（74MB IPA / 180MB 解包产物 / 71MB 输出）
+LegacyCost.ipa
+*.ipa
+ipa_extracted/
+dist/
+build_test/
+
+# 中间产物
+Tweak/.theos/
+Tweak/packages/
+Tweak/*.deb
+*.o
+*.dylib
+
+# Python
+__pycache__/
+*.pyc
+
+# 系统
+.DS_Store
+Thumbs.db

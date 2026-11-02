@@ -1,0 +1,9 @@
+Package: com.seagull.legacycost
+Name: LegacyCostTweak
+Version: 1.0.0
+Architecture: iphoneos-arm64
+Description: 负之遗产 (LegacyCostCHN) 1.0.9 修改器 —— 金币/货币/宝石/经验 + cheater 标记清除
+Maintainer: 海鸥
+Author: 海鸥
+Section: Tweaks
+Depends: mobilesubstrate
